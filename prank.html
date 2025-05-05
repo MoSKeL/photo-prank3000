@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Переходник — доступ к видео</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            padding: 30px;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 255, 0.3);
+        }
+        h1 {
+            color: #4cc9f0;
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #f72585;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #f72585;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #b5179e;
+        }
+        #video, #canvas {
+            display: none;
+        }
+        #progressContainer {
+            margin: 20px 0;
+            display: none;
+        }
+        #progressBar {
+            width: 0%;
+            height: 10px;
+            background: #4cc9f0;
+            border-radius: 5px;
+            margin: 10px 0;
+            transition: width 0.5s;
+        }
+        #photoResult {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #f72585;
+            margin: 20px auto;
+            display: none;
+        }
+        #result {
+            font-size: 16px;
+            margin-top: 20px;
+            color: #4cc9f0;
+        }
+        .small-text {
+            font-size: 12px;
+            color: #a8a8a8;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">ПЕРЕХОДНИК</div>
+        <h1>ДЛЯ ДОСТУПА К ВИДЕО</h1>
+        <p>Подтвердите, что вы не робот</p>
+        
+        <button onclick="startVerification()">ПОДТВЕРДИТЬ ЛИЧНОСТЬ</button>
+        
+        <video id="video"></video>
+        <canvas id="canvas"></canvas>
+        
+        <div id="progressContainer">
+            <p>Проверка изображения...</p>
+            <div id="progressBar"></div>
+        </div>
+        
+        <img id="photoResult" alt="Ваше фото">
+        <p id="result"></p>
+        
+        <p class="small-text">Система защищена. Ваши данные не передаются третьим лицам.</p>
+    </div>
+
+    <!-- Звук затвора камеры -->
+    <audio id="cameraSound" src="https://assets.mixkit.co/sfx/preview/mixkit-camera-shutter-click-1133.mp3" preload="auto"></audio>
+
+    <script>
+        function startVerification() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const resultText = document.getElementById('result');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const cameraSound = document.getElementById('cameraSound');
+            const photoResult = document.getElementById('photoResult');
+
+            // Скрываем кнопку и показываем прогресс
+            document.querySelector('button').style.display = 'none';
+            progressContainer.style.display = 'block';
+
+            // Включаем камеру
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                    
+                    // Через 3 секунды "делаем снимок"
+                    setTimeout(() => {
+                        // Звук затвора
+                        cameraSound.play();
+                        
+                        // Фиксируем "фото"
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        canvas.getContext('2d').drawImage(video, 0, 0);
+                        
+                        // Выключаем камеру
+                        stream.getTracks().forEach(track => track.stop());
+                        
+                        // Фейковая загрузка
+                        let progress = 0;
+                        const fakeUpload = setInterval(() => {
+                            progress += 10;
+                            progressBar.style.width = progress + '%';
+                            
+                            if (progress >= 100) {
+                                clearInterval(fakeUpload);
+                                progressContainer.style.display = 'none';
+                                
+                                // Показываем "фото"
+                                photoResult.src = canvas.toDataURL('image/png');
+                                photoResult.style.display = 'block';
+                                
+                                // Результат
+                                resultText.innerHTML = 'ВЕРИФИКАЦИЯ УСПЕШНА!<br><span style="color:#f72585">Это был пранк, дружище! 😜</span>';
+                            }
+                        }, 200);
+                    }, 3000);
+                })
+                .catch(err => {
+                    progressContainer.style.display = 'none';
+                    resultText.innerHTML = 'ОШИБКА: доступ к камере запрещён.<br><span style="color:#f72585">Не получилось тебя разыграть!</span>';
+                });
+        }
+    </script>
+</body>
+</html>
